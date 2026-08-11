@@ -6,6 +6,8 @@
 #include <time.h>
 #include <stdbool.h>
 
+typedef struct timespec crono;
+
 typedef struct
 {
     int pontos;
@@ -13,9 +15,13 @@ typedef struct
     char armas[11];
     int arma_indice;
     char escudo;
+    int cont_escudos;
     char inimigos;
     int inimigos_inativos;
     char posicoes[14];
+    crono cronometro;
+    double tempo;
+    bool movimento_intervalo;
     bool status;
 } estado_t;
 
@@ -39,16 +45,11 @@ void normaliza_terminal()
     system("stty sane");
 }
 
-// implementação de um cronômetro
-typedef struct timespec crono;
-
-// inicializa um cronômetro com a hora atual
 void crono_inicia(crono *c)
 {
     clock_gettime(CLOCK_MONOTONIC, c);
 }
 
-// retorna o tempo passado desde que o cronômetro *c foi iniciado, em segundos
 double crono_parcial(crono *c)
 {
     crono agora;
@@ -59,17 +60,7 @@ double crono_parcial(crono *c)
     return segundos + 1e-9 * nanosegundos;
 }
 
-int f(int x)
-{
-    if (x <= 0)
-        return 0;
-    return f(x - 1);
-}
-
-// lê um caractere do teclado.
-// retorna o código do caractere lido ou 0 casa nada tenha sido digitado.
-// só funciona corretamente se o terminal estiver em modo "cru".
-char lechar() // com essa função posso pergar o que foi digitado e comparar com o código
+char lechar()
 {
     fflush(stdout);
     char c;
@@ -87,27 +78,6 @@ void preenche_armas(estado_t *est)
     est->armas[10] = 'n';
 }
 
-char gera_inimigo()
-{
-    int inimigoInt;
-    char inimigoChar;
-    inimigoInt = rand() % 12;
-
-    if (inimigoInt == 10)
-    {
-        inimigoChar = 'n';
-    }
-    else if (inimigoInt == 11)
-    {
-        inimigoChar = 'N';
-    }
-    else
-    {
-        inimigoChar = '0' + inimigoInt;
-    }
-    return inimigoChar;
-}
-
 void inicializa_posicoes(estado_t *est)
 {
     est->posicoes[0] = est->escudo; // dps printo como )
@@ -117,7 +87,7 @@ void inicializa_posicoes(estado_t *est)
     {
         est->posicoes[i] = ' ';
     }
-    est->posicoes[13] = est->inimigos;
+    // est->posicoes[13] = est->inimigos;
 }
 
 void inicializa_estado(estado_t *est)
@@ -129,17 +99,62 @@ void inicializa_estado(estado_t *est)
     est->arma_indice = 0;
     est->municao = 30;
     est->escudo = ')';
-    est->inimigos = gera_inimigo();
-    est->inimigos_inativos = 19;
+    est->cont_escudos = 3;
+    est->inimigos_inativos = 20;
     est->status = true;
+    crono_inicia(&est->cronometro);
     inicializa_posicoes(est);
+    est->movimento_intervalo = true;
+    est->tempo = 1.00;
+}
+
+void intervalo_movimento(estado_t *est)
+{
+    double intervaloTempo;
+    intervaloTempo = crono_parcial(&est->cronometro);
+    if (intervaloTempo >= est->tempo)
+    {
+        crono_inicia(&est->cronometro);
+        est->movimento_intervalo = true;
+    }
+    else
+    {
+        est->movimento_intervalo = false;
+    }
+}
+
+void gera_inimigo(estado_t *est)
+{
+    int inimigoInt;
+    char inimigoChar;
+    if (est->movimento_intervalo)
+    {
+        inimigoInt = rand() % 12;
+
+        if (inimigoInt == 10)
+        {
+            inimigoChar = 'n';
+        }
+        else if (inimigoInt == 11)
+        {
+            inimigoChar = 'N';
+        }
+        else
+        {
+            inimigoChar = '0' + inimigoInt;
+        }
+        est->posicoes[13] = inimigoChar;
+        // return inimigoChar;
+        (est->inimigos_inativos)--;
+    }
 }
 
 void printa_tela(estado_t *est)
 {
-    printf("%d  ", est->pontos);
+    printf("\r %d  ", est->pontos);
     printf("%d ", est->municao);
     printf("%c ", est->armas[est->arma_indice]);
+    gera_inimigo(est);
     for (int i = 0; i < 14; i++)
     {
         printf("%c ", est->posicoes[i]);
@@ -147,10 +162,6 @@ void printa_tela(estado_t *est)
     printf("\r");
 }
 
-// no final mostra resultado e tem que digitra r para ir para próxima
-//  se os inimigos ibativos e ativos tiverem acabados
-// número de tiros, ataques inimigos são reinicializados,
-// o intervalo dos eventos temporais é atualizado, sorteia-se o tipo da nova onda (se diurna ou noturna) e a nova onda é iniciads
 void contabiliza_pontos_por_inimigo(estado_t *est, int indice)
 {
     // um ponto a cada posição qieo  inimigo se deslocou
@@ -161,17 +172,16 @@ void contabiliza_pontos_por_inimigo(estado_t *est, int indice)
 
     if (est->posicoes[indice] != 'n')
     {
-        est->pontos = pontosPorInimigo;
+        est->pontos += pontosPorInimigo;
     }
     else
     {
-        est->pontos = pontosPorInimigo * 2;
+        est->pontos += pontosPorInimigo * 2;
     }
 }
 
 void destroi_inimigos(estado_t *est)
 {
-
     // destrói o inimigo mais à esquerda
     // que seja igual à arma
     // se minha arma é igual ao inimgigo da primeira posição não vazia ent destroi ele
@@ -182,11 +192,18 @@ void destroi_inimigos(estado_t *est)
         {
             if (est->armas[est->arma_indice] == est->posicoes[i])
             {
+
+                //(est->inimigos_inativos)--;
                 est->posicoes[i] = ' ';
-                (est->inimigos_inativos)--;
                 contabiliza_pontos_por_inimigo(est, i);
+                break;
             }
-            break;
+
+            if (est->armas[est->arma_indice] == 'n' && est->posicoes[i] == 'N')
+            {
+                est->posicoes[i] = 'n';
+                break;
+            }
         }
     }
 }
@@ -234,29 +251,96 @@ void controles(estado_t *est, char c)
     }
 }
 
-void movimenta_inimigoa_por_intervalo(estado_t *est){
+void movimenta_inimigo(estado_t *est)
+{
 
-    for(int i = 4; i < 14; i++){
-        if(est->posicoes[i] != ' '){
-            est->posicoes[i] = est->posicoes[ i- 1];
-            est->posicoes[i] = ' ';
+    for (int i = 0; i < 14; i++)
+    {
+        if ((est->posicoes[i] >= '0' && est->posicoes[i] <= '9') || est->posicoes[i] == 'n' || est->posicoes[i] == 'N')
+        {
+            if (est->movimento_intervalo)
+            {
+
+                if (est->posicoes[i - 1] == ')')
+                {
+                    est->posicoes[i - 1] = ' ';
+                    est->posicoes[i] = ' ';
+                    est->pontos += 10;
+                    est->cont_escudos--;
+                    // contador que dps que chega em 3 e um inimigo chegar n
+                    // posição 0 acaba o jogo
+                }
+                if (est->cont_escudos == 0 && i == 0)
+                { // ver isso aqui
+                    est->status = false;
+                }
+                else
+                {
+                    est->posicoes[i - 1] = est->posicoes[i];
+                    est->posicoes[i] = ' ';
+                }
+            }
         }
     }
+}
+// inimigo_destroi_escudo(est);
 
+/*No final de uma onda (quando não houver mais ataques inativos e os ativos tiverem sido destruídos), os pontos são atualizados,
+e é apresentado um resumo do estado do jogo. Aguarda-se que o usuário digite r, e o número de tiros,
+ataques inimigos são reinicializados, o intervalo dos eventos temporais é atualizado, sorteia-se o tipo da nova onda (se diurna ou noturna) e a nova onda é iniciada.
+
+*/
+void atualiza_estado(estado_t *est)
+{   
+    est->municao = 30;
+    est->inimigos_inativos = 20;
+    double aumenta_tempo = (est->tempo * 10) / 100;
+    est->tempo -= aumenta_tempo;
+    est->status = true;
+    // 2.00 - 100
+    // x  - 10%
+    // sortear o tipo da onda
+    inicializa_posicoes(est);
+}
+
+void resumo_onda(estado_t *est)
+{
+    // pontos munição e ultima arma utilizada
+    printf("Total de pontos: %d ", est->pontos); // ainda tenho que ver com os escudos
+    printf("Total de munição restante: %d \n", est->municao);
+    printf("Ultima arma utilizada: %d ", est->arma_indice);
 }
 
 void joga_onda(estado_t *est)
 {
-    while (est->inimigos_inativos != 0)
+    while (est->inimigos_inativos != 0 && est->status)
     {
+        intervalo_movimento(est);
+        movimenta_inimigo(est);
         printa_tela(est);
-        char c = lechar();
 
+        char c = lechar();
         controles(est, c);
-        // passagem_tempo();
     }
 
-    // faz o que tem que fazer ao final
+    if (est->inimigos_inativos == 0)
+    {
+        resumo_onda(est);
+
+        printf("\nDigite r se quiser ir para a próxima onda:\n ");
+        char q = '0';
+        while(q != 'r' && q!= 27){
+            q = lechar();
+        }
+        if (q == 'r')
+        {
+            atualiza_estado(est);
+            system("clear");
+        }
+        if(q == 27){
+            est->status = false;
+        }
+    }
 }
 
 void joga_partida(estado_t *est)
@@ -265,7 +349,9 @@ void joga_partida(estado_t *est)
     // laço se desiste ou a partida terminou
 
     while (est->status)
+    {
         joga_onda(est);
+    }
 }
 
 int main()
