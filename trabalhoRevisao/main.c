@@ -101,7 +101,7 @@ void inicializa_estado(estado_t *est)
     est->municao = 30;
     est->escudo = ')';
     est->cont_escudos = 3;
-    est->inimigos_inativos = 4;
+    est->inimigos_inativos = 20;
     est->status = true;
     crono_inicia(&est->cronometro);
     inicializa_posicoes(est);
@@ -155,7 +155,7 @@ void printa_tela(estado_t *est)
     printf("\r %d  ", est->pontos);
     printf("%d ", est->municao);
     printf("%c ", est->armas[est->arma_indice]);
-    gera_inimigo(est);
+    // gera_inimigo(est);
     for (int i = 0; i < 14; i++)
     {
         printf("%c ", est->posicoes[i]);
@@ -289,7 +289,7 @@ void atualiza_estado(estado_t *est)
 {
     est->municao = 30;
     est->arma_indice = 0;
-    est->inimigos_inativos = 4;
+    est->inimigos_inativos = 20;
     double aumenta_tempo = (est->tempo * 10) / 100;
     est->tempo -= aumenta_tempo;
     est->status = true;
@@ -302,9 +302,9 @@ void atualiza_estado(estado_t *est)
 void resumo_onda(estado_t *est)
 {
     // pontos munição e ultima arma utilizada
-    printf("Total de pontos: %d ", est->pontos); 
-    printf("Total de munição restante: %d \n", est->municao);
-    printf("Ultima arma utilizada: %d ", est->arma_indice);
+    printf("Total de pontos: %d ", est->pontos);
+    printf("\nTotal de munição restante: %d \n", est->municao);
+    printf("\nUltima arma utilizada: %d ", est->arma_indice);
 }
 
 void joga_onda(estado_t *est)
@@ -312,6 +312,7 @@ void joga_onda(estado_t *est)
     while (est->inimigos_inativos != 0 && est->status)
     {
         intervalo_movimento(est);
+        gera_inimigo(est);
         movimenta_inimigo(est);
         printa_tela(est);
 
@@ -365,7 +366,6 @@ void le_ranking(estado_t *est)
         fscanf(arq, "%d", &est->ranking_atual[i]);
     }
     fclose(arq);
-
 }
 
 bool verifica_atualizacao_ranking(estado_t *est)
@@ -391,7 +391,7 @@ bool verifica_atualizacao_ranking(estado_t *est)
 void adiciona_ranking(estado_t *est)
 {
     if (verifica_atualizacao_ranking(est))
-   {
+    {
         FILE *arq = fopen("ranking.txt", "w");
         if (arq == NULL)
         {
@@ -417,7 +417,7 @@ void resumo_partida(estado_t *est)
     printf("Ranking Atual:\n");
     for (int i = 0; i < 3; i++)
     {
-        printf("%d. %d \n", i+1 , est->ranking_atual[i]);
+        printf("%d. %d \n", i + 1, est->ranking_atual[i]);
     }
 }
 
@@ -441,10 +441,14 @@ int main()
         {
             resumo_partida(&estado);
             printf("Deseja jogar novamente [S/N]:");
-            
+
             while (c != 'S' && c != 'N')
             {
                 c = lechar();
+            }
+            if (c == 'S')
+            {
+                system("clear");
             }
         }
 
