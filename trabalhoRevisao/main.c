@@ -90,7 +90,7 @@ void preenche_armas(estado_t *est)
     {
         for (int i = 0; i < 5; i++)
         {
-            est->armas[i] = '0' + (i * 2);                  
+            est->armas[i] = '0' + (i * 2);
         }
         est->armas[5] = 'n';
     }
@@ -178,12 +178,15 @@ void gera_inimigo(estado_t *est)
 void printa_tela(estado_t *est)
 {
     printf("\r %d  ", est->pontos);
-    printf("%d ", est->municao);
-    printf("%c ", est->armas[est->arma_indice]);
-    // gera_inimigo(est);
-    for (int i = 0; i < 14; i++)
+    if (est->tipo_onda == 1)
     {
-        printf("%c ", est->posicoes[i]);
+        printf("%d ", est->municao);
+        printf("%c ", est->armas[est->arma_indice]);
+        // gera_inimigo(est);
+        for (int i = 0; i < 14; i++)
+        {
+            printf("%c ", est->posicoes[i]);
+        }
     }
     printf("\r");
 }
@@ -267,6 +270,58 @@ void troca_arma(estado_t *est)
     }
 }
 
+void sonar(estado_t *est)
+{
+
+    // Deve existir um som diferente para cada tipo ataque, e o do ataque 'N' ou 'n' deve ser mais distinto
+    // um som para o espaço (local onde pode ter um ataque mas não tem)
+    // 13 ou 14 sons no total.
+
+    /*
+        1 - som pra escudo
+        1 - um som pra espaço vazio
+        1 - um som para tiro errado
+        11 - sons para inimigos
+
+    */
+    /*
+     O som x é para ser o som do espaço.
+     O som 11 é para ser o som da nave (N ou n).
+      O som 12 é para ser o som do escudo.
+    */
+
+    /*
+    usar sprinf que coloca printa dentro de uma string
+    //fica mudando o número e dsp monta astring com .wav
+
+    */
+   char aquivo_som[8];
+   char numero_arquivo;
+   char tipo[] = ".wav";
+    for (int i = 0; i < est->quantia_inimigos_possiveis; i++)
+    {
+        if (est->posicoes[i] == ')')
+        {
+            system("aplay -q Sons/12.wav &");
+        }
+
+        if (est->posicoes[i] == ' ')
+        {
+            system("aplay -q Sons/x.wav &");
+            //ou tiro errado
+        }
+
+        numero_arquivo = '0' - i;
+    
+
+        // numero e .wav dps
+        //nome é um char e o i é int
+        // '0' - i = 
+    }
+
+    
+}
+
 void controles(estado_t *est, char c)
 {
 
@@ -287,7 +342,6 @@ void controles(estado_t *est, char c)
 
     if (c == 32)
     {
-        // ESPAÇO
     }
 }
 
@@ -350,7 +404,7 @@ int sorteia_tipo_onda(estado_t *est)
     {
         est->tipo_onda = 0; // noturna
         return 0;
-        }
+    }
 }
 
 void atualiza_onda(estado_t *est)
