@@ -13,10 +13,12 @@ typedef struct
     int pontos;
     int municao;
     char armas[11];
+    int quantia_armas;
     int arma_indice;
     char escudo;
     int cont_escudos;
     char inimigos;
+    int quantia_inimigos_possiveis;
     int inimigos_inativos;
     char posicoes[14];
     crono cronometro;
@@ -24,6 +26,10 @@ typedef struct
     bool movimento_intervalo;
     bool status;
     int ranking_atual[3];
+    int tipo_onda;
+    int porcentagem_onda_diurna;
+    int cont_onda;
+
 } estado_t;
 
 void configura_terminal()
@@ -72,11 +78,22 @@ char lechar()
 
 void preenche_armas(estado_t *est)
 {
-    for (int i = 0; i < 10; i++)
+    if (est->tipo_onda == 1)
     {
-        est->armas[i] = '0' + i;
+        for (int i = 0; i < 10; i++)
+        {
+            est->armas[i] = '0' + i;
+        }
+        est->armas[10] = 'n';
     }
-    est->armas[10] = 'n';
+    else
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            est->armas[i] = '0' + (i * 2);                  
+        }
+        est->armas[5] = 'n';
+    }
 }
 
 void inicializa_posicoes(estado_t *est)
@@ -93,10 +110,11 @@ void inicializa_posicoes(estado_t *est)
 
 void inicializa_estado(estado_t *est)
 {
-
+    est->quantia_inimigos_possiveis = 12;
     est->pontos = 0;
+    est->tipo_onda = 1;
     preenche_armas(est);
-    est->arma_indice = 0;
+    est->quantia_armas = 11;
     est->arma_indice = 0;
     est->municao = 30;
     est->escudo = ')';
@@ -107,6 +125,8 @@ void inicializa_estado(estado_t *est)
     inicializa_posicoes(est);
     est->movimento_intervalo = true;
     est->tempo = 2.00;
+    est->porcentagem_onda_diurna = 100;
+    est->cont_onda = 0;
 }
 
 void intervalo_movimento(estado_t *est)
@@ -130,21 +150,26 @@ void gera_inimigo(estado_t *est)
     char inimigoChar;
     if (est->movimento_intervalo)
     {
-        inimigoInt = rand() % 12;
+        inimigoInt = rand() % est->quantia_inimigos_possiveis;
+        if (est->tipo_onda == 0)
+        {
+            inimigoInt = inimigoInt * 2;
+        }
 
-        if (inimigoInt == 10)
-        {
-            inimigoChar = 'n';
-        }
-        else if (inimigoInt == 11)
-        {
-            inimigoChar = 'N';
-        }
-        else
+        if (inimigoInt < est->quantia_inimigos_possiveis - 2)
         {
             inimigoChar = '0' + inimigoInt;
         }
-        est->posicoes[13] = inimigoChar;
+        else if (inimigoInt == est->quantia_inimigos_possiveis - 2)
+        {
+            inimigoChar = 'n';
+        }
+        else
+        {
+            inimigoChar = 'N';
+        }
+
+        est->posicoes[est->quantia_inimigos_possiveis + 1] = inimigoChar;
         // return inimigoChar;
         (est->inimigos_inativos)--;
     }
@@ -169,15 +194,29 @@ void contabiliza_pontos_por_inimigo(estado_t *est, int indice)
     //  13 = 1
     //  12 == 2 11 = 3 10
     //  14 - a posição que esta no vetor que da os pontos
-    int pontosPorInimigo = 14 - indice;
+    int pontosPorInimigo = est->quantia_inimigos_possiveis + 1 - indice;
 
     if (est->posicoes[indice] != 'n')
     {
-        est->pontos += pontosPorInimigo;
+        if (est->tipo_onda == 1)
+        {
+            est->pontos += pontosPorInimigo;
+        }
+        else
+        {
+            est->pontos += pontosPorInimigo * 2;
+        }
     }
     else
     {
-        est->pontos += pontosPorInimigo * 2;
+        if (est->tipo_onda == 1)
+        {
+            est->pontos += pontosPorInimigo * 2;
+        }
+        else
+        {
+            est->pontos += pontosPorInimigo * 4;
+        }
     }
 }
 
@@ -222,7 +261,7 @@ void troca_arma(estado_t *est)
 {
     (est->arma_indice)++;
     est->armas[est->arma_indice + 1];
-    if (est->arma_indice == 11)
+    if (est->arma_indice == est->quantia_armas)
     {
         est->arma_indice = 0;
     }
@@ -285,13 +324,57 @@ void movimenta_inimigo(estado_t *est)
     }
 }
 
-void atualiza_estado(estado_t *est)
+int sorteia_tipo_onda(estado_t *est)
 {
+    // O primeira onda tem 100% de chance de ser diurna. Essa chance diminui para 80%
+    // na segunda onda, 60% na terceira, 40% na quarta e 20% nas demais.
+    // posso sortee de 0 a 99 e pegar cada intervalo percentual de 100 para
+    // representar a onda
+    //  100% - 0% 1
+    //  80% - 20% 2
+    //  60% - 40% 3
+    //  40% - 60% 4
+    //  20% - 80% 5,6,6...
+    est->cont_onda++;
+    int num = rand() % 100;
+    if (est->cont_onda < 6)
+    {
+        est->porcentagem_onda_diurna = est->porcentagem_onda_diurna - 20;
+    }
+    if (num < est->porcentagem_onda_diurna)
+    {
+        est->tipo_onda = 1; // diurna
+        return 1;
+    }
+    else
+    {
+        est->tipo_onda = 0; // noturna
+        return 0;
+        }
+}
+
+void atualiza_onda(estado_t *est)
+{
+    if (sorteia_tipo_onda(est) == 1)
+    {
+        est->quantia_armas = 11;
+        preenche_armas(est);
+        est->inimigos_inativos = 20;
+        double aumenta_tempo = (est->tempo * 10) / 100;
+        est->tempo -= aumenta_tempo;
+        est->quantia_inimigos_possiveis = 12;
+    }
+    else
+    {
+        est->quantia_inimigos_possiveis = 7;
+        preenche_armas(est);
+        est->inimigos_inativos = 15;
+        est->tempo = est->tempo * 3;
+        est->quantia_armas = 7;
+    }
+
     est->municao = 30;
     est->arma_indice = 0;
-    est->inimigos_inativos = 20;
-    double aumenta_tempo = (est->tempo * 10) / 100;
-    est->tempo -= aumenta_tempo;
     est->status = true;
     // 2.00 - 100
     // x  - 10%
@@ -302,9 +385,9 @@ void atualiza_estado(estado_t *est)
 void resumo_onda(estado_t *est)
 {
     // pontos munição e ultima arma utilizada
-    printf("Total de pontos: %d ", est->pontos);
+    printf("\nTotal de pontos: %d ", est->pontos);
     printf("\nTotal de munição restante: %d \n", est->municao);
-    printf("\nUltima arma utilizada: %d ", est->arma_indice);
+    printf("Ultima arma utilizada: %d ", est->arma_indice);
 }
 
 void joga_onda(estado_t *est)
@@ -332,7 +415,7 @@ void joga_onda(estado_t *est)
         }
         if (q == 'r')
         {
-            atualiza_estado(est);
+            atualiza_onda(est);
             system("clear");
         }
         if (q == 27)
