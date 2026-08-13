@@ -34,6 +34,7 @@ char lechar()
 int main()
 {
     configura_terminal();
-    system("aplay -q Sons/x.3.wav &");
+   
+    system("aplay  Sons/x.4.wav ");
     normaliza_terminal();
 }

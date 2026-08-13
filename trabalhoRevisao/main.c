@@ -241,15 +241,21 @@ void destroi_inimigos(estado_t *est)
                 contabiliza_pontos_por_inimigo(est, i);
                 break;
             }
-
-            if (est->armas[est->arma_indice] == 'n' && est->posicoes[i] == 'N')
+            else
             {
-                est->posicoes[i] = 'n';
+                system("aplay -q Sons/12.2.wav ");
                 break;
             }
         }
+
+        if (est->armas[est->arma_indice] == 'n' && est->posicoes[i] == 'N')
+        {
+            est->posicoes[i] = 'n';
+            break;
+        }
     }
 }
+
 
 void contabiliza_municao(estado_t *est)
 {
@@ -273,53 +279,32 @@ void troca_arma(estado_t *est)
 void sonar(estado_t *est)
 {
 
-    // Deve existir um som diferente para cada tipo ataque, e o do ataque 'N' ou 'n' deve ser mais distinto
-    // um som para o espaço (local onde pode ter um ataque mas não tem)
-    // 13 ou 14 sons no total.
+    char arquivo_som[10];
+    char comando_som[20];
 
-    /*
-        1 - som pra escudo
-        1 - um som pra espaço vazio
-        1 - um som para tiro errado
-        11 - sons para inimigos
-
-    */
-    /*
-     O som x é para ser o som do espaço.
-     O som 11 é para ser o som da nave (N ou n).
-      O som 12 é para ser o som do escudo.
-    */
-
-    /*
-    usar sprinf que coloca printa dentro de uma string
-    //fica mudando o número e dsp monta astring com .wav
-
-    */
-   char aquivo_som[8];
-   char numero_arquivo;
-   char tipo[] = ".wav";
-    for (int i = 0; i < est->quantia_inimigos_possiveis; i++)
+    for (int i = 0; i < est->quantia_inimigos_possiveis + 1; i++)
     {
         if (est->posicoes[i] == ')')
         {
-            system("aplay -q Sons/12.wav &");
+            system("aplay -q Sons/12.3.wav ");
         }
-
         if (est->posicoes[i] == ' ')
         {
-            system("aplay -q Sons/x.wav &");
-            //ou tiro errado
+            system("aplay -q Sons/12.2.wav ");
         }
 
-        numero_arquivo = '0' - i;
-    
+        if (est->posicoes[i] >= '0' && est->posicoes[i] <= '9')
+        {
+            sprintf(arquivo_som, "%c.2.wav", est->posicoes[i]);
+            sprintf(comando_som, "aplay -q Sons/%s ", arquivo_som);
 
-        // numero e .wav dps
-        //nome é um char e o i é int
-        // '0' - i = 
+            system(comando_som);
+        }
+        if (est->posicoes[i] == 'n' || est->posicoes[i] == 'N')
+        {
+            system("aplay -q Sons/11.2.wav ");
+        }
     }
-
-    
 }
 
 void controles(estado_t *est, char c)
@@ -342,6 +327,7 @@ void controles(estado_t *est, char c)
 
     if (c == 32)
     {
+        sonar(est);
     }
 }
 
@@ -507,6 +493,7 @@ void le_ranking(estado_t *est)
 
 bool verifica_atualizacao_ranking(estado_t *est)
 {
+    // so le de novo caso  o rankin tenha mudado - fazer dps
     le_ranking(est);
     int cont;
     for (int i = 0; i < 3; i++)
@@ -539,10 +526,7 @@ void adiciona_ranking(estado_t *est)
         {
             fprintf(arq, "%d ", est->ranking_atual[i]);
         }
-        // readiciona todos e confiro se o atual é maior que algum
 
-        // tenho que conferir se o que estou colocando é maio do que os que já estão
-        // posso colocar 0 no primeiro e ai quando fori conferir vai ver o0 e ir para o primeiro
         fclose(arq);
     }
 }
