@@ -1,0 +1,21 @@
+Listas
+
+tipo abstrato de dados que mantem um conjunto de dados e sua ordem 
+ex: string é uma lista de caracteries 
+
+typedeaf struct lista *Lista // TAD
+
+Operaçẽos:
+ - obter o número de dados na lista
+ - obter o dado em determinada posição da lista
+ - remover o dado em determinada posição da lista
+ - inserir um dado em determinada posição da lista Um pouco menos comuns:
+ - remover o(s) dado(s) com determinado valor
+ - ordenar os dados na lista segundo algum critério
+ - percorrer os dados de uma lista
+
+Listas restritas (classificadas pelas limitaçẽos em suas operações):
+
+- Pilha: remover e inserir na mesma ponta // primeiro a entrar ultima a sair // LIFO    
+- Fila: inserir em uma ponta e revomver da outra // primeiro a entrar, primeiro a sair //FIFO
+- Deque: inserir e remover em qualquer ponta 

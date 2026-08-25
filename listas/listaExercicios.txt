@@ -1,0 +1,69 @@
+
+Se a fila de entrada em cada função abaixo tiver sido preenchida com os elementos A, B, C ... G, em ordem, qual seria o conteúdo da fila na saída da função?
+
+/*
+void função1(Fila f)
+{
+  Pilha p = pilha_cria();
+  Fila g = fila_cria();
+  for (int i = 0; i < 3; i++) {
+    pilha_insere(p, fila_remove(f));  
+    fila_insere(g, fila_remove(f));   
+  }
+  while (!fila_vazia(g)) {
+    fila_insere(f, fila_remove(g));  
+  }
+  while (!pilha_vazia(p)) {
+    fila_insere(f, pilha_remove(p));
+  }
+  pilha_destroi(p);
+  fila_destroi(g);
+}
+
+primeira execusão 
+ p a
+ g b
+ f c d e f g
+
+segunda
+ p c a
+ g d b
+ f e f G
+
+terceira 
+ p e c a
+ g f d b
+ f g
+
+Fila f = g b d f e c a  
+*/
+
+/*
+void função2(Fila f)
+{
+  Pilha p = pilha_cria();
+  for (int i = 0; i < 3; i++) {
+    pilha_insere(p, fila_remove(f));
+    fila_insere(f, fila_remove(f));
+  }
+  while (!pilha_vazia(p)) {
+    fila_insere(f, pilha_remove(p));
+  }
+  pilha_destroi(p);
+}
+ 
+ f d b g  
+primeira execusão 
+ p a
+ f b g f e d c
+
+segunda
+ p c a
+ f d b g f e 
+
+terceira 
+ p e c a
+ f f d b g  
+
+Fila f = g b d f e c a
+*/

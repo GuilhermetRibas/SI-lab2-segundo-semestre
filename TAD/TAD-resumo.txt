@@ -1,0 +1,122 @@
+============================================================
+              TIPOS ABSTRATOS DE DADOS (TAD)
+============================================================
+
+Tipos Abstratos de Dados (TAD) permitem definir os valores e
+as operações que um dado pode assumir.
+
+Um TAD é constituído por:
+
+    - Descrição do conjunto de valores que um dado desse
+      tipo pode ter;
+    - Operações que podem ser realizadas sobre dados desse
+      tipo.
+
+
+------------------------------------------------------------
+ORGANIZAÇÃO DOS ARQUIVOS
+------------------------------------------------------------
+
+"tad.c"
+
+    - Criação da struct tad;
+    - Implementação das funções do "tad.h";
+    - Funções auxiliares, utilizando "static" para que não
+      sejam usadas em outros arquivos.
+
+
+"tad.h"
+
+    - Interface pública do TAD;
+    - Declaração do tipo criado;
+    - Declaração das funções que podem ser utilizadas.
+
+!! Assim, quando o cliente acessa o arquivo ".h", ele não
+   tem acesso aos campos da struct e não pode fazer:
+
+       t->dia = 30;
+
+
+------------------------------------------------------------
+TIPOS DE FUNÇÕES DE UM TAD
+------------------------------------------------------------
+
+As funções seguem, normalmente, o padrão:
+
+    tad_nome_funcao();
+
+
+CRIAR E DESTRUIR
+----------------
+
+- tad_cria()
+
+    - Recebe os elementos necessários para a criação
+      da variável;
+    - Faz a alocação de memória;
+    - Retorna o ponteiro para o local alocado.
+
+
+- tad_destroi()
+
+    - Recebe o ponteiro para a variável a ser destruída;
+    - Libera o espaço alocado.
+
+
+------------------------------------------------------------
+DECLARAÇÃO DO TIPO
+------------------------------------------------------------
+
+    typedef struct tad *Tad;
+
+    // "Tad" é um apelido para "struct tad *"
+
+    Tad dado; // É equivalente a: struct tad *dado;
+
+
+------------------------------------------------------------
+ENCAPSULAMENTO
+------------------------------------------------------------
+
+// Os arquivos que utilizam o TAD criado acessam seus dados
+// por meio de um ponteiro.
+
+// Assim, as operações que o dado pode sofrer são limitadas
+// pelas funções de manipulação.
+
+// Afinal, o cliente não tem acesso à struct original, com
+// toda a sua estrutura e campos, para modificá-la diretamente.
+
+// Se a struct estiver exposta, os arquivos que utilizam o TAD
+// podem ter acesso direto aos campos da struct, diminuindo
+// o encapsulamento.
+
+------------------------------------------------------------
+PONTEIRO E ALOCAÇÃO DINÂMICA
+------------------------------------------------------------
+
+// Ao utilizar um ponteiro para uma struct que está escondida,
+// o cliente não conhece o tamanho da struct.
+
+// O cliente conhece apenas o tamanho do ponteiro, e não o
+// tamanho da estrutura para a qual ele aponta.
+
+// Por isso, nessa abordagem de struct opaca, a implementação
+// do TAD utiliza alocação dinâmica de memória para criar a
+// estrutura.
+
+// A alocação é feita dentro do arquivo ".c", onde a definição
+// completa da struct é conhecida.
+
+
+------------------------------------------------------------
+IDEIA PRINCIPAL
+------------------------------------------------------------
+
+!! O encapsulamento serve para:
+
+    - Manter as regras do TAD;
+    - Controlar como os dados podem ser modificados;
+    - Esconder detalhes da implementação;
+    - Permitir modificações internas sem quebrar o código
+      que utiliza o TAD.
