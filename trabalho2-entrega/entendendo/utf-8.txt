@@ -1,0 +1,120 @@
+======================================================================================
+                                     UNICODE E UTF-8
+======================================================================================
+
+Unicode: biblioteca de códigos para cada caractere (letras, emojis, símbolos, etc.)
+
+UTF-8: maneira de tradução dos códigos Unicode para bytes (1 a 4 bytes)
+    - padrão em hexadecimal e traduzido para binários
+    - decide quais bits vão em cada byte
+    - primeiros bits de identificação
+
+    0xxxxxxx → apenas 1 byte → 7 bits para a representação
+
+    110xxxxx → "estou começando um caractere de 2 bytes" → 11 bits para representação
+    10xxxxxx → "sou continuação"
+
+    1110xxxx → "estou começando um caractere de 3 bytes" → 16 bits para representação
+    10xxxxxx 10xxxxxx → "sou continuação"
+
+    11110xxx → "estou começando um caractere de 4 bytes" → 21 bits para representação
+    10xxxxxx 10xxxxxx 10xxxxxx → "sou continuação"
+
+    - terá no máximo 21 bits para armazenar os bits do código do caractere,
+      em função dos bits de identificação
+
+    - a identificação é necessária para que caracteres que ocupam mais de 1 byte
+      possam ser identificados e traduzidos juntos, em vez de decodificar byte por byte
+
+
+---------------------------------------------------------------------------------------
+                                 QUANTIDADE DE BYTES
+---------------------------------------------------------------------------------------
+
+1 byte: letras comuns do alfabeto inglês e números (padrão ASCII) usam apenas 1 byte.
+        Ex: A ocupa 1 byte.
+
+2 a 3 bytes: letras acentuadas (como ã ou ç) e símbolos de outros idiomas
+             usam 2 ou 3 bytes.
+
+4 bytes: emojis usam 4 bytes.
+
+
+------------------------------------------------------------------------------------
+                                      EXEMPLO
+
+1 BYTE ---------------------------
+
+Caractere: A
+
+em UTF-8: U+0041
+em hexadecimal: 0041
+em binário: 1000001
+em 7 bits: 1000001
+
+no sistema UTF-8:
+
+    0xxxxxxx
+       ↑
+      bits
+
+final:
+
+    01000001
+
+2 BYTES --------------------------
+
+Caractere: ç
+
+em UTF-8: U+00E7
+em hexadecimal: 00E7
+em binário: 11100111
+em 11 bits: 00011100111
+
+no sistema UTF-8:
+
+    110xxxxx 10xxxxxx
+       ↑         ↑
+      bits      bits
+
+final:
+
+    11000011 10100111
+
+3 BYTES --------------------------
+
+Caractere: €
+
+em UTF-8: U+20AC
+em hexadecimal: 20AC
+em binário: 0010000010101100
+em 16 bits: 0010000010101100
+
+no sistema UTF-8:
+
+    1110xxxx 10xxxxxx 10xxxxxx
+       ↑         ↑         ↑
+      bits      bits      bits
+
+final:
+
+    11100010 10000010 10101100
+
+ 4 BYTES --------------------------
+
+Caractere: 😀
+
+em UTF-8: U+1F600
+em hexadecimal: 1F600
+em binário: 00001 111101 1000000
+em 21 bits: 00001111101100000000
+
+no sistema UTF-8:
+
+    11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+       ↑         ↑         ↑         ↑
+      bits      bits      bits      bits
+
+final:
+
+    11110000 10011111 10011000 10000000

@@ -1,0 +1,29 @@
+Trabalho 2
+
+completar o arquivo .c para que o TAD funcione como o descrito
+
+unicode - código hexadecimal 
+UTF-8 - form de codificar unicodes em 1 a 4 bytes dependendo do caracter ou símbolo
+
+
+
+- implemnetar string (cadeia de caractéries codificaos em utf-8)
+
+    // Uma string (deste TAD) é um sequência de tais caracteres, codificados em
+    // UTF8, em que cada codepoint(código de cada caractere) é codificado usando entre 1 e 4 bytes.
+    // Uma string pode conter um número qualquer de caracteres (inclusive nenhum),
+    // limitado à capacidade da memória.
+    // Uma string pode conter quaisquer códigos válidos, **inclusive 0**.  
+
+
+// A memória para conter os bytes de uma string deve ser alocada e/ou
+//   realocada conforme a necessidade, cuidando para que a quantidade
+//   de memória alocada seja sempre:
+//   - nula (não alocada) se a string for vazia, ou
+//   - não inferior ao necessário para armazenar os bytes da codificação utf8;
+//   - não inferior à alocação mínima;
+//   - não superior ao triplo do número de bytes necessários
+//     (exceto quando for o mínimo);
+//   - uma potência de 2.
+
+
