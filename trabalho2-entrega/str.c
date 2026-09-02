@@ -39,29 +39,58 @@ static void s_ok(Str_c s)
   {
     abort();
   }
-  if (u8_conta_unichar_nos_bytes(s->quantia_bytes, s->vetor_codigos_utf8 == -1))
+  if (s->quantia_bytes < 0 || s->quantia_caracteries < 0 || s->capacidade < 0)
+  {
+    abort();
+  }
+  if (s->vetor_codigos_utf8 == NULL && s->capacidade > 0)
+  {
+    abort();
+  }
+  int nchar = u8_conta_unichar_nos_bytes(s->quantia_bytes, s->vetor_codigos_utf8);
+  if (nchar == -1)
+  {
+    abort();
+  }
+  if (nchar != s->quantia_caracteries)
   {
     abort();
   }
 }
 
+// calcula a capacidade a alocar para caber "necessario" bytes, respeitando
+//   as regras do topo do arquivo: nunca menor que MIN_ALLOC, potência de 2,
+//   e nunca maior que o triplo do necessário (exceto quando for o mínimo)
+static int calcula_nova_capacidade(int necessario)
+{
+  if (necessario == 0)
+  {
+    return 0;
+  }
+
+  int capacidade = MIN_ALLOC;
+  while (capacidade < necessario)
+  {
+    capacidade *= 2;
+  }
+  return capacidade;
+}
+
 // operações de criação e destruição {{{1
 
-// Aloca, inicializa e retorna uma string que contém uma cópia da
-//   string C que inicia em strC.
-// A string C deve estar codificada em UTF8, e é delimitada pelo
-//   caractere \0 (que não faz parte da string).
-// Retorna uma string vazia se strC não contiver UTF8 válido ou se for NULL.
-
-static byte *aloca_vetor(tamanho)
+static byte *aloca_vetor(int tamanho)
 {
+  if (tamanho == 0)
+  {
+    return NULL;
+  }
   byte *vet = malloc(tamanho);
   assert(vet != NULL);
 
   return vet;
 }
 
-static void preenche_struct_invalido(Str s, int tamanho, int nchar)
+static void preenche_struct_invalido(Str s)
 {
   s->vetor_codigos_utf8 = NULL;
   s->quantia_bytes = 0;
@@ -71,36 +100,51 @@ static void preenche_struct_invalido(Str s, int tamanho, int nchar)
 
 static void preenche_struct(Str s, int tamanho, int nchar)
 {
-  s->vetor_codigos_utf8 = aloca_vetor(tamanho);
+  int capacidade = calcula_nova_capacidade(tamanho);
+  s->vetor_codigos_utf8 = aloca_vetor(capacidade);
   s->quantia_bytes = tamanho;
   s->quantia_caracteries = nchar;
-  s->capacidade = tamanho;
+  s->capacidade = capacidade;
 }
 
 // função de realocação
-// fazer uma que ve se precisa de mais, se sim, quanto?
-static void realoca_vetor(Str s, int novaCapacidade)
+// só realoca se novaCapacidade for maior que a capacidade atual
+static void realoca_vetor(Str s, int necessario)
 {
+  if (necessario <= s->capacidade)
+  {
+    return;
+  }
+  int novaCapacidade = calcula_nova_capacidade(necessario);
   byte *vetRealocado = realloc(s->vetor_codigos_utf8, novaCapacidade);
   assert(vetRealocado != NULL);
   s->vetor_codigos_utf8 = vetRealocado;
   s->capacidade = novaCapacidade;
 }
 
+// Aloca, inicializa e retorna uma string que contém uma cópia da
+//   string C que inicia em strC.
+// A string C deve estar codificada em UTF8, e é delimitada pelo
+//   caractere \0 (que não faz parte da string).
+// Retorna uma string vazia se strC não contiver UTF8 válido ou se for NULL.
 Str s_cria(char const *strC)
 {
   // comts strC já vem codificada em utf8
   Str s = malloc(sizeof(*s));
   assert(s != NULL);
 
-  int tamanho = 0, nchar = 0;
-
-  tamanho = strlen(strC);
-  nchar = u8_conta_unichar_nos_bytes(tamanho, strC);
-
-  if (strC == NULL || nchar == -1)
+  if (strC == NULL)
   {
-    preenche_struct_invalido(s, tamanho, nchar);
+    preenche_struct_invalido(s);
+    return s;
+  }
+
+  int tamanho = strlen(strC);
+  int nchar = u8_conta_unichar_nos_bytes(tamanho, (byte *)strC);
+
+  if (nchar == -1)
+  {
+    preenche_struct_invalido(s);
     return s;
   }
 
@@ -115,6 +159,7 @@ void s_destroi(Str s)
   free(s->vetor_codigos_utf8);
   free(s);
 }
+
 // Retorna uma nova string, que contém uma substring de s.
 // A substring é como descrito em s_substring
 // Pode ser implementada assim:
@@ -137,13 +182,13 @@ Str s_cria_cópia(Str_c s)
 // Retorna uma string vazia em caso de erro.
 Str s_cria_de_arquivo(char *nome)
 {
-  Str s;
-  FILE *arq = fopen(nome, "r");
+  FILE *arq = fopen(nome, "rb");
   if (arq == NULL)
   {
-    return s = s_cria("");
+    return s_cria("");
   }
-  int tamanho = 0, cont = 0;
+
+  int tamanho = 0;
   int c;
   while ((c = fgetc(arq)) != EOF)
   {
@@ -151,18 +196,31 @@ Str s_cria_de_arquivo(char *nome)
   }
   rewind(arq);
 
-  char *reserva = malloc(tamanho + 1);
+  byte *reserva = malloc(tamanho > 0 ? tamanho : 1);
   assert(reserva != NULL);
-  // so le até p esoaço
+
+  int cont = 0;
   while ((c = fgetc(arq)) != EOF)
   {
-    reserva[cont] = c;
+    reserva[cont] = (byte)c;
     cont++;
   }
-  reserva[tamanho] = '\0';
   fclose(arq);
-  s = s_cria(reserva);
-  free(reserva);
+
+  int nchar = u8_conta_unichar_nos_bytes(tamanho, reserva);
+  if (nchar == -1)
+  {
+    free(reserva);
+    return s_cria("");
+  }
+
+  Str s = malloc(sizeof(*s));
+  assert(s != NULL);
+  s->vetor_codigos_utf8 = reserva;
+  s->quantia_bytes = tamanho;
+  s->quantia_caracteries = nchar;
+  s->capacidade = tamanho > 0 ? tamanho : 1;
+
   return s;
 }
 
@@ -177,15 +235,40 @@ int s_tam(Str_c s)
 char *s_strc(Str_c s)
 {
   s_ok(s);
-  //...
-  return NULL;
+
+  char *copia = malloc(s->quantia_bytes + 1);
+  assert(copia != NULL);
+
+  memcpy(copia, s->vetor_codigos_utf8, s->quantia_bytes);
+  copia[s->quantia_bytes] = '\0';
+
+  return copia;
 }
 
 unichar s_ch(Str_c s, int pos)
 {
   s_ok(s);
-  //...
-  return UNI_INV;
+
+  int ncharS = s->quantia_caracteries;
+
+  if (pos < 0)
+  {
+    pos = ncharS + pos + 1;
+  }
+
+  if (pos < 0 || pos >= ncharS)
+  {
+    return UNI_INV;
+  }
+
+  byte *inicio = u8_avanca_unichar(s->vetor_codigos_utf8, pos);
+  int indiceInicio = inicio - s->vetor_codigos_utf8;
+  int nbyte = u8_nbytes_no_unichar_que_comeca_com(s->vetor_codigos_utf8[indiceInicio]);
+
+  unichar c;
+  u8_unichar_nos_bytes(nbyte, &s->vetor_codigos_utf8[indiceInicio], &c);
+
+  return c;
 }
 
 // operações de busca e comparação {{{1
@@ -205,8 +288,8 @@ bool s_igual(Str_c s, Str_c sb)
     {
       return false;
     }
-    return true;
   }
+  return true;
 }
 
 int s_busca_c(Str_c s, int pos, Str_c sb)
@@ -222,6 +305,10 @@ int s_busca_c(Str_c s, int pos, Str_c sb)
   {
     // n = 5 pos = -2  carro  5 + -2 +1 = 4
     pos = ncharS + pos + 1;
+  }
+  if (pos < 0)
+  {
+    pos = 0;
   }
   if (pos > ncharS)
   {
@@ -487,16 +574,25 @@ void s_substitui(Str s, int pos, int tam, Str_c sb)
   int nbyteSubstituir = indiceFimS - indiceInicioS;
 
   int nbytesS = s->quantia_bytes;
-  int nbytesSb = sb->quantia_bytes;
-  int ncharSb = sb->quantia_caracteries;
   int nbytesAposSb = nbytesS - indiceFimS;
+
+  int nbytesSb;
+  int ncharSb;
+
+  if (sb != NULL)
+  {
+    nbytesSb = sb->quantia_bytes;
+    ncharSb = sb->quantia_caracteries;
+  }
+  else
+  {
+    nbytesSb = 0;
+    ncharSb = 0;
+  }
 
   int tamanho = nbytesS - nbyteSubstituir + nbytesSb;
 
-  if (tamanho > s->capacidade)
-  {
-    realoca_vetor(s, tamanho);
-  }
+  realoca_vetor(s, tamanho);
 
   memmove(s->vetor_codigos_utf8 + indiceInicioS + nbytesSb, s->vetor_codigos_utf8 + indiceFimS, nbytesAposSb);
 
@@ -541,10 +637,10 @@ void s_substring(Str s, Str_c sb, int pos, int tam)
   byte *fim = u8_avanca_unichar(inicio, tam);
   int nbyteSubstring = fim - inicio;
 
-  byte *reserva = malloc(nbyteSubstring);
+  int novaCapacidade = calcula_nova_capacidade(nbyteSubstring);
+  byte *reserva = aloca_vetor(novaCapacidade);
   if (nbyteSubstring > 0)
   {
-    assert(reserva != NULL);
     memcpy(reserva, inicio, nbyteSubstring);
   }
 
@@ -552,7 +648,7 @@ void s_substring(Str s, Str_c sb, int pos, int tam)
   s->vetor_codigos_utf8 = reserva;
   s->quantia_bytes = nbyteSubstring;
   s->quantia_caracteries = tam;
-  s->capacidade = nbyteSubstring;
+  s->capacidade = novaCapacidade;
 }
 
 void s_copia(Str s, Str_c sb)
@@ -569,13 +665,17 @@ void s_insere_c(Str s, int pos, unichar c)
 {
   s_ok(s);
 
-  byte strC[5];
-
+  byte strC[4];
   int nbytesC = u8_converte_pra_utf8(c, strC);
+  assert(nbytesC != -1);
 
-  strC[nbytesC] = '\0';
-
-  Str caractere = s_cria((char *)strC);
+  Str caractere = malloc(sizeof(*caractere));
+  assert(caractere != NULL);
+  caractere->vetor_codigos_utf8 = aloca_vetor(nbytesC);
+  memcpy(caractere->vetor_codigos_utf8, strC, nbytesC);
+  caractere->quantia_bytes = nbytesC;
+  caractere->quantia_caracteries = 1;
+  caractere->capacidade = nbytesC;
 
   s_substitui(s, pos, 0, caractere);
 
@@ -601,7 +701,18 @@ void s_apara(Str s, Str_c sobras)
 {
   s_ok(s);
   s_ok(sobras);
-  //...
+
+  int ncharS = s->quantia_caracteries;
+  int inicio = s_busca_nc(s, 0, sobras);
+
+  if (inicio == -1)
+  {
+    s_substitui(s, 0, ncharS, NULL);
+    return;
+  }
+  int fim = s_busca_rnc(s, -1, sobras);
+  s_substitui(s, fim + 1, -1, NULL);
+  s_substitui(s, 0, inicio, NULL);
 }
 
 // operações de E/S {{{1
