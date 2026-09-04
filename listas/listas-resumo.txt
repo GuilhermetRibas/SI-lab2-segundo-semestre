@@ -19,3 +19,74 @@ Listas restritas (classificadas pelas limitaçẽos em suas operações):
 - Pilha: remover e inserir na mesma ponta // primeiro a entrar ultima a sair // LIFO    
 - Fila: inserir em uma ponta e revomver da outra // primeiro a entrar, primeiro a sair //FIFO
 - Deque: inserir e remover em qualquer ponta 
+
+Implementação Listas
+
+são classificadas pela forma de:
+    - alocação dinamica ou estática
+    - dados guarados de forma contígua ou encadeada
+
+ -> Contígua: região alocada dinamicamnente 
+    -primeiro elemento na primeira posição do vetor
+    -tamanho do vetor na última posição ou em uma variável auxiliar dentro do struct lista
+
+ ->Operações básicas
+    - inserir: insere e move todos os elementos dps da posição de inserção, se for no final, não precisa
+    - remoção: necessita de mover o elemento até o final da lista para a remoção
+
+    *pilha: tem um custo baixo para implementação, não necessita de moviemntação
+    *fila: uma de suas operações tem custo baixo, mas a outra necessiata de movimentação
+
+ ->Implentação Circular:
+   Lista:
+   cap 5 - memória disponiível
+   pri 3 - índice do primeiro elmento do vetor
+   num 3 - número de elementos da lista
+   dad 9 1 2 3 8
+       2 3 4 0 1 ->indices dos dados
+   
+   - operações de sustituição apenas muda as variáveis da lista
+   - operações de adição que precisam de mais memória necessitam de realocação
+
+   Ex:
+
+   lista cheia
+   cap 5
+   pri 3
+   num 5
+   dad 1 2 3 4 5
+       2 3 4 0 1 (índices na lista)
+
+   realoca mais memória e preenche a lista 
+   cap 10
+   pri 3
+   num 5
+   dad 1 2 3 4 5 1 2 3 x x
+             0 1 2 3 4 (índices na lista)
+
+   forma mais otimizada de realocar
+   cap 10
+   pri 8
+   num 5
+   dad 1 2 3 4 5 x x x 4 5
+       2 3 4           0 1 (índices na lista)
+
+  *tenho que realocar e manter a ordem da do vetor de dados da maneira mais eficiênte 
+
+  ->Representação 
+
+  dad -> tipo int 
+ ↓
+┌────┬────┬────┬────┬────┬────┬────┬────┐
+│ 10 │ 20 │ 30 │    │    │    │    │    │
+└────┴────┴────┴────┴────┴────┴────┴────┘
+  ↑              ↑
+ pri            capacidade
+
+
+ dad -> tipo struct(typedeaf)
+ ↓
+┌─────────┬─────────┬─────────┬─────────┐
+│ struct  │ struct  │ struct  │ struct  │
+│   [0]   │   [1]   │   [2]   │   [3]   │
+└─────────┴─────────┴─────────┴─────────┘
