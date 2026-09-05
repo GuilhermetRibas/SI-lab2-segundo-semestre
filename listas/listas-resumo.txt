@@ -40,7 +40,7 @@ são classificadas pela forma de:
  ->Implentação Circular:
    Lista:
    cap 5 - memória disponiível
-   pri 3 - índice do primeiro elmento do vetor
+   pri 3 - índice físico do vetor do primeiro elmento do 
    num 3 - número de elementos da lista
    dad 9 1 2 3 8
        2 3 4 0 1 ->indices dos dados
@@ -54,13 +54,14 @@ são classificadas pela forma de:
    cap 5
    pri 3
    num 5
+       0 1 2 3 4
    dad 1 2 3 4 5
-       2 3 4 0 1 (índices na lista)
+       3 4 0 1 2 (índices na lista)
 
    realoca mais memória e preenche a lista 
    cap 10
    pri 3
-   num 5
+   num 8
    dad 1 2 3 4 5 1 2 3 x x
              0 1 2 3 4 (índices na lista)
 
@@ -72,6 +73,42 @@ são classificadas pela forma de:
        2 3 4           0 1 (índices na lista)
 
   *tenho que realocar e manter a ordem da do vetor de dados da maneira mais eficiênte 
+
+->Posição Lógica
+  - é a ordem que os elementos estão posicionas em dad
+  - pl = pos
+  ex:
+  posição:  0  1  2  3  4
+  elemento: A  B  C  D  E
+
+->Posição física do vetor   
+ - são os indices realacionados implementação Circular
+ - pf = (l->pri + pl) % l->cap
+   ex:
+   posição:    2 3 4 0 1
+   elementos:  A B C D E
+
+->Relação entre as posições 
+posição lógica → índice físico
+
+     0  ─────────→  4    A
+     1  ─────────→  5    B
+     2  ─────────→  0    C
+     3  ─────────→  1    D
+     4  ─────────→  2    E
+     5  ─────────→  3    x
+
+
+    pos = 0 → (4 + 0) % 6 = 4
+    pos = 1 → (4 + 1) % 6 = 5
+    pos = 2 → (4 + 2) % 6 = 0
+    pos = 3 → (4 + 3) % 6 = 1
+    pos = 4 → (4 + 4) % 6 = 2
+    pos = 4 → (4 + 5) % 6 = 3
+
+
+
+
 
   ->Representação 
 
