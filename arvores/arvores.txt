@@ -1,0 +1,76 @@
+- Árvore -
+conjunto de dados onde o principal é chamdo de raíz(no raiz) e o 
+resto(nós) são subconjunto que tbm serão árvores e terão subconjuntos (galhos ou intermediários)
+Nos sem filhos = folhas
+
+profundidade = tamanho do caminho do nó ate a raíz
+grau = número de filho que um nó tem
+altura = maior caminho da raiz até um nó filho
+-> Níveis;
+
+    o      nível 0
+  o   o    nível 1
+o   o   o  nível 2
+
+-> àrvore Binária
+grau 2 = cada nó tem 0,1 ou 2 filhos;
+os os filhos não existentes são arvores vazias
+
+      o        nível 0
+  o       o    nível 1
+o   o   o   o  nível 2
+
+//strutura
+
+typedeaf struct no No
+
+struct no{
+    int dado;
+    no *esq;
+    no *dir;
+}
+No *a_cria_no(int v, No esq, No direito){
+    No *no = malloc(sizeof(No));
+    assert(no != NULL);
+    no->dado = v;
+    no->esq = esq;
+    no->dir = dir;
+}
+
+int n_nós(No *a){
+    if(a_vazia(a))return 0;
+    return 1 + n_nos(a->esq) + n_nos(a->dir);
+}
+
+int a_profundidade(No *a, int v){
+    if(a_vazio(a))return 0;
+    int cont = -1;
+    
+    
+}
+
+int a_altura(No *a){
+    if(a_vazia(a))return 0;
+     
+
+}
+
+int a_soma(No *a){
+    if(a_vazia(a))return 0;
+    int soma += soma(a->dado);
+    
+    return soma;
+}
+
+int a_maior(No *a){
+ return 0;
+}
+
+void a_desenha(No *a, int n){
+    if(a_vazia(a)) return 0;
+    printf("%*s%d\n",n * 2, "", a->dado);
+    desenha(a, n+1);
+    desenha (a, n + 2);
+    return 0;
+}
+
