@@ -64,6 +64,30 @@ Lista l_cria(){
 //   "a,ba,ca, te", ", " -> ["a" "ba" "ca" "te"]
 //   "aba \ncate\n", "\n" -> ["aba " "cate"]
 Lista l_cria_separando(Str s, Str sep){       
+/*
+caractere normal
+    ↓
+continua acumulando
+
+separador (espaço, \n...)
+    ↓
+termina a substring
+não coloca o separador
+
+operador (+, -, *, /...)
+    ↓
+termina a substring
+coloca o operador na lista
+continua
+
+
+*/
+dado_t copia = s_cria_substring();
+
+
+
+
+
 
 }
 
@@ -101,7 +125,12 @@ bool l_vazia(Lista l){
 
 // imprime os dados que estão na lista
 void l_imprime(Lista l){
-   
+   l_ok(l);
+   if(l_vazia(l))return;
+
+   for(No *no = l->sentinela->prox; no != l->sentinela; no = no->prox){
+        s_imprime(no->string);
+   }
 
 }
 
