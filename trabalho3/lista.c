@@ -5,7 +5,6 @@
 #include"lista.h"
 #include "str.h"
 
-typedef struct no No;
 struct no
 {
     No *ant;
@@ -64,32 +63,39 @@ Lista l_cria(){
 //   "a,ba,ca, te", ", " -> ["a" "ba" "ca" "te"]
 //   "aba \ncate\n", "\n" -> ["aba " "cate"]
 Lista l_cria_separando(Str s, Str sep){       
-/*
-caractere normal
-    ↓
-continua acumulando
+    s_ok(s);
+    Lista l = l_cria();
+    int tam = s_tam(s);
+    int inicio = 0;
 
-separador (espaço, \n...)
-    ↓
-termina a substring
-não coloca o separador
+    //procurar pelos de ceparação
+    // pegar onde começa a sub até antes do sep
 
-operador (+, -, *, /...)
-    ↓
-termina a substring
-coloca o operador na lista
-continua
+    for(int i =0 ; i < tam; i++){
+        unichar c = s_ch(s,i);
+        bool separa = false; 
+        for(int j = 0; j < s_tam(sep); j++) {
+            if(c == s_ch(sep,j)){
+                separa = true;
+                break;
+            }
+        }
 
-
-*/
-dado_t copia = s_cria_substring();
-
-
-
-
-
-
+        if(separa){
+            
+           if(i > inicio){
+             Str substring = s_cria_substitui(s, inicio, i - inicio);
+            }
+            inicio = i + 1; 
+        }    
+    }
+    if(inicio < tam){//para o final
+        Str substring = s_cria_substring(s, inicio, tam - inicio);
+        l_insere_fim(l, substring);
+    }
+    return l;
 }
+
 
 // libera a memória ocupada por uma lista
 void l_destroi(Lista l){

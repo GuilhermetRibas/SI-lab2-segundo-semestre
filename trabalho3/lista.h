@@ -4,6 +4,8 @@
 
 // lista inclui str e str inclui lista. define o tipo Lista antes das inclusões.
 // TAD de uma lista
+typedef struct no No;
+
 typedef struct lista *Lista;
 
 #include "str.h"

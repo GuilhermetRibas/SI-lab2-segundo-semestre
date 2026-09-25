@@ -1,4 +1,5 @@
 #include "str.h"
+#include"lista.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -127,13 +128,31 @@ Str s_cria(char const *strC)
 }
 
 // Aloca, inicializa e retorna uma nova string, contendo a representação decimal de num
-Str s_cria_número(double num);
+Str s_cria_número(double num){
+  char num_char[100];
+  snprintf(num_char,sizeof(num_char),"%.3f",num);
+  return s_cria(num_char);
+}
 
 // Retorna uma nova string, resultado da concatenação das strings em l, com a string
 //   em sep entre cada duas strings de l
 // Exemplo:
 // ["oi" "mundo"] ", " -> "oi, mundo"
-Str s_cria_unindo(Lista l, Str sep);
+Str s_cria_unindo(Lista l, Str sep){
+   l_ok(l);
+   int tam = l_tam(l);
+   if(l_vazia(l))return NULL;
+   Str string = s_cria("");
+   Str str_no =  l_dado_pos(l, 0);
+
+    s_anexa(string, str_no);
+    for(int i = 1; i < tam; i++){
+     str_no =  l_dado_pos(l, i);
+     s_anexa(string, sep);
+      s_anexa(string, str_no);
+    }
+    return string;
+}
 
 
 
