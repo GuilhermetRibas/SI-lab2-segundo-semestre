@@ -270,7 +270,7 @@ unichar s_ch(Str_c s, int pos)
 double s_número(Str_c s){
   char *str = s_strc(s);
   double num_duble;
-  sscanf(s->vetor_codigos_utf8, "%lf", &num_duble);
+  sscanf(str, "%lf", &num_duble);
   free(str);
   return num_duble;
 }

@@ -253,9 +253,8 @@ dado_t l_remove_inicio(Lista l){
     if(l_vazia(l))return NULL;
 
     No *no = l->sentinela->prox;
-    dado_t s;
-    
-    s = no->string;
+    dado_t s = s_cria_cópia(no->string);
+
     l->sentinela->prox = no->prox;
     no->prox->ant = l->sentinela;
     l->tamanho--;
@@ -270,9 +269,8 @@ dado_t l_remove_fim(Lista l){
     if(l_vazia(l))return NULL;
 
     No *no = l->sentinela->ant;
-    dado_t s;
+    dado_t s = s_cria_cópia(no->string);
 
-    s = no->string;
     no->ant->prox = l->sentinela;
     l->sentinela->ant = no->ant;
     l->tamanho--;
@@ -287,7 +285,7 @@ dado_t l_remove_pos(Lista l, int pos){
     if(pos == l->tamanho - 1)return l_remove_fim(l);
 
     No *no = l_no_na_pos(l, pos);
-    dado_t s = no->string;
+    dado_t s = s_cria_cópia(no->string);
     No *proximo = no->prox;
     No *anterior = no->ant;
 

@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -19,8 +18,10 @@ typedef struct tabela_precedencia *Tabela_pre;
 
 struct calc
 {
+    Lista expressao;
     Lista operadores;
     Lista operandos;
+    Tabela_pre tabela;
 };
 
 typedef enum token Token;
@@ -31,18 +32,37 @@ enum token
     numero,
     variavel,
     operador,
+    erro,
 };
 
 static Token c_tipo_entrada(unichar c)
 {
-    if (c == ' ' || c == "\n" || c == '\t')
+    if (c == ' ' || c == '\t' || c == '\n')
         return ignora;
+
     if ((c >= '0' && c <= '9') || c == '.')
         return numero;
-    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '$')
+
+    if ((c >= 'a' && c <= 'z') ||
+        (c >= 'A' && c <= 'Z') ||
+        c == '$')
         return variavel;
 
-    return operador;
+    if (c == '+' || c == '-' ||
+        c == '*' || c == '/' ||
+        c == '^' || c == '(' ||
+        c == ')')
+        return operador;
+
+    return erro;
+}
+
+static bool c_caractere_variavel(unichar c)
+{
+    return ((c >= 'a' && c <= 'z') ||
+            (c >= 'A' && c <= 'Z') ||
+            (c >= '0' && c <= '9') ||
+            c == '_');
 }
 
 // converter operador para codigo
@@ -161,7 +181,7 @@ static Tabela_pre c_le_arquivo(char *nome)
         {
             {
                 fscanf(arq, "%s", operacao);
-                Str s = s_strc(operacao);
+                Str s = s_cria(operacao);
                 l_insere(tabela->vet_listas_linhas[i], s);
             }
         }
@@ -171,140 +191,240 @@ static Tabela_pre c_le_arquivo(char *nome)
     return tabela;
 }
 
-//////////Funções na tabela de precedendcia
-
-// retona em número o tipo do operador
-static int c_converte_operador_para_num(unichar c)
-{
-    if (c == '+')
-        return 0;
-
-    if (c == '-')
-        return 1;
-
-    if (c == '*')
-        return 2;
-
-    if (c == '/')
-        return 3;
-
-    if (c == '^')
-        return 4;
-
-    if (c == '(')
-        return 5;
-
-    if (c == ')')
-        return 6;
-
-    return -1;
-}
-
-// retorna qual operação deve ser execura pela calculadora de acordo com a entrada e topo da pilha
-static unichar c_confere_operacao_pilha(Lista l, Str entrada, Tabela_pre t)
-{
-    Str topo_pilha = l_topo(l);
-    unichar operador_pilha = s_ch(topo_pilha, 0);
-    int linha = c_converte_operador_para_num(operador_pilha);
-    unichar entrada_uni = s_ch(entrada, 0);
-    int col = c_coluna_tabela_operador(entrada_uni);
-    assert(linha != -1 && col != -1);
-
-    dado_t dado_operador = l_dado_pos(t->vet_listas_linhas[linha], col);
-    unichar operacao = s_ch(dado_operador, 0);
-
-    return operacao;
-}
+//////////Funções para Calcular ///////////////////
 
 static void c_libera_calc(Calc c)
 {
     l_destroi(c->operadores);
     l_destroi(c->operandos);
+    l_destroi(c->expressao);
+    c_libera_tabela(c->tabela);
     free(c);
 }
 
-static Calc c_cria_calc()
+static Calc c_cria_calc(Str expressao)
 {
     Calc c = malloc(sizeof(struct calc));
     assert(c != NULL);
 
     c->operadores = l_cria();
     c->operandos = l_cria();
+    c->expressao = tokeniza(expressao);
+
+    char *arquivo = "tabela-precedencia.txt";
+    c->tabela = c_le_arquivo(arquivo);
 
     return (c);
 }
 
-static double c_opera(double op1, double op2, unichar operador)
+/*
+V  → Vazio
+F  → Fator
+E  → Empilhar
+O  → Operar
+D  → Descartar
+T  → Terminar
+Er → Erro
+*/
+
+// retona em número o tipo do operador do topo da pilha
+static int c_converte_operador_para_num_topo_pilha(unichar c)
 {
+
+    if (c == '+' || c == '-')
+        return 1;
+
+    if (c == '*' || c == '/')
+        return 2;
+
+    if (c == '^')
+        return 3;
+
+    if (c == '(')
+        return 4;
+
+    return -1;
+}
+// retona em número o tipo do operador da entrada
+static int c_converte_operador_para_num_entrada(unichar c)
+{
+    if (c_tipo_entrada(c) == numero)
+        return 0;
+
+    if (c == '+' || c == '-')
+        return 1;
+
+    if (c == '*' || c == '/')
+        return 2;
+
+    if (c == '^')
+        return 3;
+
+    if (c == '(')
+        return 4;
+
+    if (c == ')')
+        return 5;
+
+    return -1;
+}
+
+// retorna qual operação deve ser execura pela calculadora de acordo com a entrada e topo da pilha
+static Str c_confere_operacao_pilha(Calc c, Str entrada)
+{
+    int linha;
+    if (!(l_vazia(c->operadores)))
+    {
+        Str topo_pilha = l_topo(c->operadores);
+        unichar operador_pilha = s_ch(topo_pilha, 0);
+        linha = c_converte_operador_para_num_topo_pilha(operador_pilha);
+    }
+    else
+    {
+        linha = 0;
+    }
+
+    unichar entrada_uni = s_ch(entrada, 0);
+    int col = c_converte_operador_para_num_entrada(entrada_uni);
+
+    assert(linha != -1 && col != -1);
+
+    Str operacao = l_dado_pos(c->tabela->vet_listas_linhas[linha], col);
+
+    return operacao;
+}
+
+// retona o resultado da operação
+static void c_opera(Calc c)
+{
+    assert(l_tam(c->operandos) >= 2);
+    Str operador_str = l_topo(c->operadores);
+    unichar operador = s_ch(operador_str, 0);
+    Str op2_str = l_desempilha(c->operandos);
+    Str op1_str = l_desempilha(c->operandos);
+
+    double op2 = s_número(op2_str);
+    double op1 = s_número(op1_str);
+
+    double resultado;
+
     if (operador == '+')
-        return op1 + op2;
+    {
+        resultado = op1 + op2;
+    }
+    else if (operador == '-')
+    {
+        resultado = op1 - op2;
+    }
+    else if (operador == '*')
+    {
+        resultado = op1 * op2;
+    }
+    else if (operador == '/')
+    {
+        resultado = op1 / op2;
+    }
+    else if (operador == '^')
+    {
+        resultado = pow(op1, op2);
+    }
+    else
+    {
+        assert(false);
+    }
 
-    if (operador == '-')
-        return op1 - op2;
+    Str resultado_str = s_cria_número(resultado);
+    l_empilha(c->operandos, resultado_str);
+    s_destroi(op2_str);
+    s_destroi(op1_str);
+    l_desempilha(c->operadores);
+}
 
-    if (operador == '*')
-        return op1 * op2;
-
-    if (operador == '/')
-        return op1 / op2;
-
-    if (operador == '^')
-        return pow(op1, op2);
-
-    assert(false);
-    return 0;
+static bool c_termina_execusao(Calc c)
+{
+    return (l_tam(c->operandos) == 1 && l_tam(c->operadores) == 0);
 }
 
 Str calculadora(Str expressão)
 {
-    char *arquivo = "tabela-precedencia.txt";
-    Tabela_pre t = c_le_arquivo(arquivo);
-    Lista l = tokeniza(expressão);
+    Calc c = c_cria_calc(expressão);
+    Str resultado = NULL;
+    bool erro = true;
+    bool terminou = false;
 
-    Calc c = c_cria_calc();
-
-    for (int i = 0; i < l_tam(l); i++)
+    for (int i = 0; i < l_tam(c->expressao); i++)
     {
-        dado_t dado_str = l_dado_pos(l, i);
+        Str dado_str = s_cria_cópia(l_dado_pos(c->expressao, i));
         unichar dado_uni = s_ch(dado_str, 0);
 
         Token tipo = c_tipo_entrada(dado_uni);
 
-        if (dado_uni == numero)
+        if (tipo == numero)
         {
-            l_insere(c->operandos, dado_str);
+            l_empilha(c->operandos, dado_str);
+            continue;
         }
-        if (dado_uni == operador)
+
+        if (tipo == operador)
         {
-            unichar operacao = c_confere_operacao_pilha(l, dado_str, t);
-            if (operacao == 'E')
+            bool analisar_token = true;
+
+            while (analisar_token)
             {
-                l_insere(c->operadores, dado_str);
+                Str operacao = c_confere_operacao_pilha(c, dado_str);
+                unichar operacao_uni = s_ch(operacao, 0);
+
+                if (operacao_uni == 'E' && s_tam(operacao) == 2 &&
+                    s_ch(operacao, 1) == 'r')
+                {
+                    erro = false;
+                    analisar_token = false;
+                    break;
+                }
+                else if (operacao_uni == 'E')
+                {
+                    l_empilha(c->operadores, dado_str);
+                    analisar_token = false;
+                }
+                else if (operacao_uni == 'O')
+                {
+                    c_opera(c);
+                }
+                else if (operacao_uni == 'D')
+                {
+                    Str descartado = l_desempilha(c->operadores);
+                    s_destroi(descartado);
+                }
+                else if (operacao_uni == 'T')
+                {
+                    if (c_termina_execusao(c))
+                    {
+                        resultado = l_desempilha(c->operandos);
+                        terminou = true;
+                        analisar_token = false;
+                    }
+                    else
+                    {
+                        erro = false;
+                        analisar_token = false;
+                    }
+                }
             }
-            else if(operacao == 'O')
-            {
-                Str op2_str = l_desempilha(c->operadores);
-                Str op1_str = l_desempilha(c->operadores);
-                
-                double op2 = s_número(op2_str);
-                double op1 = s_número(op1_str);
 
-                double resultado = c_opera(op1,op2,dado_uni);
+            s_destroi(dado_str);
 
-                Str resultado_str = s_cria_número(resultado);
-                l_empilha(c->operandos,resultado_str);
-
-            }
+            if (!erro || terminou)
+                break;
         }
     }
 
-    //caso das outras letras, ver dps
-
     c_libera_calc(c);
-    c_libera_tabela(t);
-    l_destroi(l);
-}
 
+    if (!erro || !terminou)
+        return s_cria("Erro");
+
+    return resultado;
+}
 // Retorna uma nova Lista contendo substrings de txt.
 // Uma substring inicia em um caractere diferente de espaço, tabulação,
 //   fim de linha.
@@ -318,7 +438,7 @@ Str calculadora(Str expressão)
 // "92+a ba 3b3 ** *  " -> ["92" "+" "a" "ba" "3" "b3" "*" "*" "*"]
 Lista tokeniza(Str txt)
 {
-    Lista l = l_cria;
+    Lista l = l_cria();
     int tam = s_tam(txt);
     int cont = 0;
 
@@ -333,6 +453,10 @@ Lista tokeniza(Str txt)
             cont++;
             continue;
         }
+        if(tipo == erro){
+            s_destroi(txt);
+            l_destroi(l);
+        }
         int inicio = cont;
 
         if (tipo == numero)
@@ -341,7 +465,7 @@ Lista tokeniza(Str txt)
             while (cont < tam)
             {
                 c = s_ch(txt, cont);
-                if (!((c >= '0' && c <= '9') || c == '.'))
+                if (c_tipo_entrada(c) != numero)
                 {
                     break;
                 }
@@ -350,19 +474,21 @@ Lista tokeniza(Str txt)
         }
         else if (tipo == variavel)
         {
-            c = s_ch(txt, cont);
-
-            if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '$'))
-                break;
-
             cont++;
+            while(cont < tam){
+            c = s_ch(txt, cont);
+            if (c_caractere_variavel(c)){
+                break;
+            }
+            cont++;
+            }
         }
         else
         {
             cont++;
         }
-
-        Str token = s_cria_substring(txt, inicio, cont);
+        int tam_substring = cont - inicio;
+        Str token = s_cria_substring(txt, inicio, tam_substring);
         l_insere_fim(l, token);
     }
     s_destroi(txt);
