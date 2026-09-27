@@ -37,6 +37,7 @@ static No *l_aloca_no(){
 }
 
 static void l_libera_no(No *no){
+    s_destroi(no->string);
     free(no);
 }
 
@@ -84,7 +85,7 @@ Lista l_cria_separando(Str s, Str sep){
         if(separa){
             
            if(i > inicio){
-             Str substring = s_cria_substitui(s, inicio, i - inicio);
+             Str substring = s_cria_substring(s, inicio, i - inicio);
             }
             inicio = i + 1; 
         }    
@@ -124,7 +125,6 @@ bool l_cheia(Lista l){
 }
 // retorna true se a lista tiver vazia
 bool l_vazia(Lista l){
-    l_ok(l);
     return l_tam(l) == 0;
 }
 
@@ -184,7 +184,7 @@ static No *l_no_na_pos(Lista l, int pos){
     No *no ;
     int p;
 
-    if(l_decide_percurso(l,pos) == 1){
+    if(l_decide_percurso(l,pos) == 0){
     no = l->sentinela->prox;
         p=0;
     while(p < pos && no != l->sentinela){
@@ -211,8 +211,9 @@ void l_insere_pos(Lista l, dado_t d, int p){
     if(p == l->tamanho)return l_insere_fim(l,d);
 
     No *no = l_aloca_no();
-    no->string = d;
-    free(d);
+     dado_t copia = s_cria_cópia(d);
+    no->string = copia;
+    s_destroi(d);
 
     No *anterior = l_no_na_pos(l, p - 1);
     No *proximo = l_no_na_pos(l,p);

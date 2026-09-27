@@ -1,0 +1,6 @@
+0	1	2	3	4	5
+0	T	E	E	E	E	Er
+1	O	O	E	E	E	O
+2	O	O	O	E	E	O
+3	O	O	O	E	E	O
+4	Er	E	E	E	E	D

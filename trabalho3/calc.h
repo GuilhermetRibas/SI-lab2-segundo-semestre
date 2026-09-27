@@ -8,6 +8,8 @@
 #include "str.h"
 #include "lista.h"
 
+typedef struct calc *Calc;
+
 // Calcula o valor de expressão e retorna uma nova Str contendo o resultado.
 // Em cado de erro, os primeiros caracteres da Str de retorno são "#ERRO ".
 Str calculadora(Str expressão);

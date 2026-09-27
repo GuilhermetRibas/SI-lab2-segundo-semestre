@@ -130,7 +130,7 @@ Str s_cria(char const *strC)
 // Aloca, inicializa e retorna uma nova string, contendo a representação decimal de num
 Str s_cria_número(double num){
   char num_char[100];
-  snprintf(num_char,sizeof(num_char),"%.3f",num);
+  sprintf(num_char,"%.3f",num);
   return s_cria(num_char);
 }
 
@@ -155,7 +155,6 @@ Str s_cria_unindo(Lista l, Str sep){
 }
 
 
-
 void s_destroi(Str s)
 {
   s_ok(s);
@@ -177,7 +176,49 @@ Str s_cria_cópia(Str_c s)
 
 
 ///ver melhor com esta funcionado 
-Str s_cria_de_arquivo(char *nome);
+Str s_cria_de_arquivo(char *nome)
+{
+  FILE *arq = fopen(nome, "rb");
+  if (arq == NULL)
+  {
+    return s_cria("");
+  }
+
+  int tamanho = 0;
+  int c;
+  while ((c = fgetc(arq)) != EOF)
+  {
+    tamanho++;
+  }
+  rewind(arq);
+
+  byte *reserva = malloc(tamanho > 0 ? tamanho : 1);
+  assert(reserva != NULL);
+
+  int cont = 0;
+  while ((c = fgetc(arq)) != EOF)
+  {
+    reserva[cont] = (byte)c;
+    cont++;
+  }
+  fclose(arq);
+
+  int nchar = u8_conta_unichar_nos_bytes(tamanho, reserva);
+  if (nchar == -1)
+  {
+    free(reserva);
+    return s_cria("");
+  }
+
+  Str s = malloc(sizeof(*s));
+  assert(s != NULL);
+  s->vetor_codigos_utf8 = reserva;
+  s->quantia_bytes = tamanho;
+  s->quantia_caracteries = nchar;
+  s->capacidade = tamanho > 0 ? tamanho : 1;
+
+  return s;
+}
 
 int s_tam(Str_c s)
 {
@@ -226,7 +267,13 @@ unichar s_ch(Str_c s, int pos)
 }
 
 // retorna um número que corresponde à representação decimal contida em s
-double s_número(Str_c s);
+double s_número(Str_c s){
+  char *str = s_strc(s);
+  double num_duble;
+  sscanf(s->vetor_codigos_utf8, "%lf", &num_duble);
+  free(str);
+  return num_duble;
+}
 
 bool s_igual(Str_c s, Str_c sb)
 {
