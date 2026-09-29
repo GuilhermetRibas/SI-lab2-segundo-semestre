@@ -86,6 +86,7 @@ Lista l_cria_separando(Str s, Str sep){
             
            if(i > inicio){
              Str substring = s_cria_substring(s, inicio, i - inicio);
+             l_insere_fim(l, substring);
             }
             inicio = i + 1; 
         }    

@@ -6,6 +6,7 @@
 #include "lista.h"
 #include "str.h"
 #include "calc.h"
+#include "dicionario.h"
 
 struct tabela_precedencia
 {
@@ -22,7 +23,10 @@ struct calc
     Lista operadores;
     Lista operandos;
     Tabela_pre tabela;
+    Dicionário dicionario;
 };
+
+static Calc c = NULL;
 
 typedef enum token Token;
 
@@ -51,7 +55,7 @@ static Token c_tipo_entrada(unichar c)
     if (c == '+' || c == '-' ||
         c == '*' || c == '/' ||
         c == '^' || c == '(' ||
-        c == ')')
+        c == ')' || c == '=')
         return operador;
 
     return erro;
@@ -191,30 +195,77 @@ static Tabela_pre c_le_arquivo(char *nome)
     return tabela;
 }
 
+///////// Função do Dicionário de Variáveis ///////
+
+static bool c_menor_chave(chave_t a, chave_t b)
+{
+    Str chave_a = (Str)a;
+    Str chave_b = (Str)b;
+
+    char *str_a = s_strc(chave_a);
+    char *str_b = s_strc(chave_b);
+
+    int resultado = strcmp(str_a, str_b);
+
+    free(str_a);
+    free(str_b);
+
+    return resultado < 0;
+}
+
+static bool c_igual_chave(chave_t a, chave_t b)
+{
+    Str chave_a = (Str)a;
+    Str chave_b = (Str)b;
+
+    return s_igual(chave_a, chave_b);
+}
+
+static Dicionário c_init_dicionario()
+{
+    return dic_cria(c_menor_chave, c_igual_chave);
+}
+
 //////////Funções para Calcular ///////////////////
 
+static void c_destroi_variavel(chave_t chave, valor_t valor)
+{
+    s_destroi((Str)chave);
+    s_destroi((Str)valor);
+}
+
 static void c_libera_calc(Calc c)
+{
+    c_libera_tabela(c->tabela);
+    dic_para_todos(c->dicionario, c_destroi_variavel);
+    dic_destrói(c->dicionario);
+    free(c);
+}
+
+static void c_libera_listas_calc(Calc c)
 {
     l_destroi(c->operadores);
     l_destroi(c->operandos);
     l_destroi(c->expressao);
-    c_libera_tabela(c->tabela);
-    free(c);
 }
 
-static Calc c_cria_calc(Str expressao)
+static void c_init_listas_calc(Calc c, Str expressao)
 {
-    Calc c = malloc(sizeof(struct calc));
-    assert(c != NULL);
-
+    c->expressao = tokeniza(expressao);
     c->operadores = l_cria();
     c->operandos = l_cria();
-    c->expressao = tokeniza(expressao);
+}
+
+static Calc c_cria_calc()
+{
+    Calc novo = malloc(sizeof(struct calc));
+    assert(novo != NULL);
 
     char *arquivo = "tabela-precedencia.txt";
-    c->tabela = c_le_arquivo(arquivo);
+    novo->tabela = c_le_arquivo(arquivo);
+    novo->dicionario = c_init_dicionario();
 
-    return (c);
+    return (novo);
 }
 
 /*
@@ -243,12 +294,15 @@ static int c_converte_operador_para_num_topo_pilha(unichar c)
     if (c == '(')
         return 4;
 
+    if (c == '=')
+        return 5;
+
     return -1;
 }
 // retona em número o tipo do operador da entrada
 static int c_converte_operador_para_num_entrada(unichar c)
 {
-    if (c_tipo_entrada(c) == numero)
+    if (c == 'F')
         return 0;
 
     if (c == '+' || c == '-')
@@ -265,6 +319,9 @@ static int c_converte_operador_para_num_entrada(unichar c)
 
     if (c == ')')
         return 5;
+
+    if (c == '=')
+        return 6;
 
     return -1;
 }
@@ -294,50 +351,135 @@ static Str c_confere_operacao_pilha(Calc c, Str entrada)
     return operacao;
 }
 
-// retona o resultado da operação
-static void c_opera(Calc c)
+static void c_atribui_variavel(Calc c)
 {
-    assert(l_tam(c->operandos) >= 2);
-    Str operador_str = l_topo(c->operadores);
-    unichar operador = s_ch(operador_str, 0);
-    Str op2_str = l_desempilha(c->operandos);
-    Str op1_str = l_desempilha(c->operandos);
+    Str valor_str = l_desempilha(c->operandos);
+    Str variavel_str = l_desempilha(c->operandos);
 
-    double op2 = s_número(op2_str);
-    double op1 = s_número(op1_str);
+    double valor = s_número(valor_str);
+    Str valor_novo = s_cria_número(valor);
 
-    double resultado;
+    valor_t antigo = dic_insere(c->dicionario, (chave_t)variavel_str, (valor_t)valor_novo);
 
+    if (antigo != VALOR_NÃO_EXISTE)
+        s_destroi((Str)antigo);
+
+    s_destroi(valor_str);
+
+    l_empilha(c->operandos, valor_novo);
+}
+
+static double c_calcula_operacao(unichar operador, double op1, double op2)
+{
     if (operador == '+')
     {
-        resultado = op1 + op2;
+        return op1 + op2;
     }
     else if (operador == '-')
     {
-        resultado = op1 - op2;
+        return op1 - op2;
     }
     else if (operador == '*')
     {
-        resultado = op1 * op2;
+        return op1 * op2;
     }
     else if (operador == '/')
     {
-        resultado = op1 / op2;
+        return op1 / op2;
     }
     else if (operador == '^')
     {
-        resultado = pow(op1, op2);
+        return pow(op1, op2);
     }
     else
     {
         assert(false);
     }
 
-    Str resultado_str = s_cria_número(resultado);
-    l_empilha(c->operandos, resultado_str);
-    s_destroi(op2_str);
-    s_destroi(op1_str);
-    l_desempilha(c->operadores);
+    return -1;
+}
+
+static bool c_numero_valido(Str operando)
+{
+    char *str = s_strc(operando);
+    double valor;
+    char resto;
+
+    bool valido = sscanf(str, "%lf %c", &valor, &resto) == 1;
+
+    free(str);
+
+    return valido;
+}
+
+static bool c_valor_operando(Calc c, Str operando, double *valor)
+{
+    unichar primeiro = s_ch(operando, 0);
+
+    if ((primeiro >= '0' && primeiro <= '9') || primeiro == '.')
+    {
+        if (!c_numero_valido(operando))
+            return false;
+
+        *valor = s_número(operando);
+        return true;
+    }
+
+    if ((primeiro >= 'a' && primeiro <= 'z') || (primeiro >= 'A' && primeiro <= 'Z') || primeiro == '$')
+    {
+        Str valor_str = dic_busca(c->dicionario, operando);
+
+        if (valor_str == VALOR_NÃO_EXISTE)
+        {
+            return false;
+        }
+
+        *valor = s_número(valor_str);
+        return true;
+    }
+
+    return false;
+}
+
+// retona o resultado da operação
+static bool c_opera(Calc c)
+{
+    assert(l_tam(c->operandos) >= 2);
+    Str operador_str = l_topo(c->operadores);
+    unichar operador = s_ch(operador_str, 0);
+    if (operador == '=')
+    {
+        c_atribui_variavel(c);
+
+        Str operador_descartado = l_desempilha(c->operadores);
+        s_destroi(operador_descartado);
+
+        return true;
+    }
+    else
+    {
+        Str op2_str = l_desempilha(c->operandos);
+        Str op1_str = l_desempilha(c->operandos);
+        double op2;
+        double op1;
+
+        if (!c_valor_operando(c, op1_str, &op1) ||
+            !c_valor_operando(c, op2_str, &op2))
+        {
+            s_destroi(op1_str);
+            s_destroi(op2_str);
+            return false;
+        }
+
+        double resultado = c_calcula_operacao(operador, op1, op2);
+
+        Str resultado_str = s_cria_número(resultado);
+        l_empilha(c->operandos, resultado_str);
+        s_destroi(op2_str);
+        s_destroi(op1_str);
+        l_desempilha(c->operadores);
+        return true;
+    }
 }
 
 static bool c_termina_execusao(Calc c)
@@ -345,9 +487,65 @@ static bool c_termina_execusao(Calc c)
     return (l_tam(c->operandos) == 1 && l_tam(c->operadores) == 0);
 }
 
+//////// Funções arquivo de entrada e saída ////////////
+
+static Lista c_le_linha_arquivo_entrada(char *nome)
+{
+    FILE *arq = fopen(nome, "r");
+    assert(arq != NULL);
+    Lista l = l_cria();
+    char linha[256];
+    while (fgets(linha, sizeof(linha), arq) != NULL)
+    {
+        Str s = s_cria(linha);
+        l_insere_fim(l, s);
+    }
+    fclose(arq);
+    return l;
+}
+
+static void c_escreve_resultado_arquivo(Lista l)
+{
+    FILE *arq = fopen("Resultado", "w");
+    assert(arq != NULL);
+    for (int i = 0; i < l_tam(l); i++)
+    {
+        Str resultado = l_dado_pos(l, i);
+        char *num_char = s_strc(resultado);
+
+        fprintf(arq, "%s", num_char);
+        fprintf(arq, "\n");
+        free(num_char);
+    }
+    fclose(arq);
+}
+
+static Lista c_calcula_expressoes_do_aquivo(Lista l)
+{
+    Lista l_resultado = l_cria();
+    for (int i = 0; i < l_tam(l); i++)
+    {
+
+        Str expressao = l_dado_pos(l, i);
+
+        Str resultado = calculadora(expressao);
+        l_insere_fim(l_resultado, resultado);
+
+        s_destroi(resultado);
+    }
+    // c_libera_calc(c);
+    c = NULL;
+    return l_resultado;
+}
+
 Str calculadora(Str expressão)
 {
-    Calc c = c_cria_calc(expressão);
+    if (c == NULL)
+    {
+        c = c_cria_calc();
+    }
+    c_init_listas_calc(c, expressão);
+
     Str resultado = NULL;
     bool erro = true;
     bool terminou = false;
@@ -388,7 +586,11 @@ Str calculadora(Str expressão)
                 }
                 else if (operacao_uni == 'O')
                 {
-                    c_opera(c);
+                      if (!c_opera(c))
+                    {
+                        erro = false;
+                        analisar_token = false;
+                    }
                 }
                 else if (operacao_uni == 'D')
                 {
@@ -417,8 +619,7 @@ Str calculadora(Str expressão)
                 break;
         }
     }
-
-    c_libera_calc(c);
+    c_libera_listas_calc(c);
 
     if (!erro || !terminou)
         return s_cria("Erro");
@@ -453,9 +654,11 @@ Lista tokeniza(Str txt)
             cont++;
             continue;
         }
-        if(tipo == erro){
+        if (tipo == erro)
+        {
             s_destroi(txt);
             l_destroi(l);
+            return NULL;
         }
         int inicio = cont;
 
@@ -475,12 +678,14 @@ Lista tokeniza(Str txt)
         else if (tipo == variavel)
         {
             cont++;
-            while(cont < tam){
-            c = s_ch(txt, cont);
-            if (c_caractere_variavel(c)){
-                break;
-            }
-            cont++;
+            while (cont < tam)
+            {
+                c = s_ch(txt, cont);
+                if (!c_caractere_variavel(c))
+                {
+                    break;
+                }
+                cont++;
             }
         }
         else
