@@ -27,6 +27,7 @@ static void l_ok(Lista l){
     for(No *no = l->sentinela->prox; no != l->sentinela; no = no->prox){
         tam++;
     }
+    
     assert(tam == l->tamanho);
 }
 
@@ -64,7 +65,6 @@ Lista l_cria(){
 //   "a,ba,ca, te", ", " -> ["a" "ba" "ca" "te"]
 //   "aba \ncate\n", "\n" -> ["aba " "cate"]
 Lista l_cria_separando(Str s, Str sep){       
-    s_ok(s);
     Lista l = l_cria();
     int tam = s_tam(s);
     int inicio = 0;
@@ -142,35 +142,54 @@ void l_imprime(Lista l){
 }
 
 // insere o dado d no início da lista l
-void l_insere_inicio(Lista l, dado_t d){
+void l_insere_inicio(Lista l, dado_t d)
+{
     l_ok(l);
+
+    bool vazia = l_vazia(l);
+
     No *no = l_aloca_no();
+
     dado_t copia = s_cria_cópia(d);
     no->string = copia;
     s_destroi(d);
+
     no->ant = l->sentinela;
     no->prox = l->sentinela->prox;
+
     no->prox->ant = no;
     l->sentinela->prox = no;
 
-    if(l_vazia(l))l->sentinela->ant = no;
+    if (vazia)
+        l->sentinela->ant = no;
+
     l->tamanho++;
+
     l_ok(l);
 }
 
 // insere o dado d no final da lista l
-void l_insere_fim(Lista l, dado_t d){
+void l_insere_fim(Lista l, dado_t d)
+{
     l_ok(l);
-    if(l_vazia(l))return l_insere_inicio(l,d);
+
+    if (l_vazia(l))
+        return l_insere_inicio(l, d);
+
     No *no = l_aloca_no();
+
     dado_t copia = s_cria_cópia(d);
     no->string = copia;
     s_destroi(d);
+
     no->prox = l->sentinela;
     no->ant = l->sentinela->ant;
+
     no->ant->prox = no;
     l->sentinela->ant = no;
+
     l->tamanho++;
+
     l_ok(l);
 }
 

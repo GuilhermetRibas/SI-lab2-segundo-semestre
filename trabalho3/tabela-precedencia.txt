@@ -1,6 +1,0 @@
-0	T	E	E	E	E	Er  E
-1	O	O	E	E	E	O   E
-2	O	O	O	E	E	O   E
-3	O	O	O	E	E	O   E
-4	Er	E	E	E	E	D   E
-5   O   E   E   E   E   O   E

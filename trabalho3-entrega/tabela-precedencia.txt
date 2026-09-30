@@ -1,0 +1,6 @@
+T	E	E	E	E	Er  E
+O	O	E	E	E	O   E
+O	O	O	E	E	O   E
+O	O	O	E	E	O   E
+Er	E	E	E	E	D   E
+O   E   E   E   E   O   E

@@ -139,7 +139,6 @@ Str s_cria_número(double num){
 // Exemplo:
 // ["oi" "mundo"] ", " -> "oi, mundo"
 Str s_cria_unindo(Lista l, Str sep){
-   l_ok(l);
    int tam = l_tam(l);
    if(l_vazia(l))return NULL;
    Str string = s_cria("");

@@ -10,6 +10,11 @@
 
 typedef struct calc *Calc;
 
+Lista c_le_linha_arquivo_entrada(char *nome);
+
+Lista c_calcula_expressoes_do_aquivo(Lista l);
+
+void c_escreve_resultado_arquivo(Lista l);
 
 // Calcula o valor de expressão e retorna uma nova Str contendo o resultado.
 // Em cado de erro, os primeiros caracteres da Str de retorno são "#ERRO ".
@@ -27,5 +32,7 @@ Str calculadora(Str expressão);
 // " 9. 5" -> ["9." "5"]
 // "92+a ba 3b3 ** *  " -> ["92" "+" "a" "ba" "3" "b3" "*" "*" "*"]
 Lista tokeniza(Str txt);
+
+
 
 #endif // CALC_H
